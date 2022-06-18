@@ -112,12 +112,15 @@ class ProgramApply(ProgramMixin, FormView):
         fields = collections.OrderedDict()
         for question in self.program.questions.order_by("order"):
             widget = forms.Textarea if question.type == "textarea" else None
-            fields["question-%s" % question.id] = {
+            fields[f"question-{question.id}"] = {
                 "boolean": forms.BooleanField,
                 "text": forms.CharField,
                 "textarea": forms.CharField,
                 "integer": forms.IntegerField,
-            }[question.type](required=question.required, widget=widget, label=question.question)
+            }[question.type](
+                required=question.required, widget=widget, label=question.question
+            )
+
         return type("ApplicationForm", (BaseApplyForm, ), fields)
 
     def form_valid(self, form):
@@ -128,8 +131,10 @@ class ProgramApply(ProgramMixin, FormView):
             applied = timezone.now(),
         )
         for question in self.program.questions.order_by("order"):
-            value = form.cleaned_data.get("question-%s" % question.id, None) or None
-            if value:
+            if (
+                value := form.cleaned_data.get(f"question-{question.id}", None)
+                or None
+            ):
                 Answer.objects.create(
                     applicant = applicant,
                     question = question,
@@ -234,8 +239,13 @@ class RandomUnscoredApplicant(ProgramMixin, View):
     """
 
     def get(self, request):
-        applicant = self.program.applicants.exclude(scores__user=self.request.user).order_by("?").first()
-        if applicant:
+        if (
+            applicant := self.program.applicants.exclude(
+                scores__user=self.request.user
+            )
+            .order_by("?")
+            .first()
+        ):
             return redirect(applicant.urls.view)
         else:
             return redirect(self.program.urls.applicants)

@@ -42,39 +42,38 @@ class BulkLoader(ProgramMixin):
             for name, required, label in self.get_targets()
         )
         form_input = {"csv_id": csv_obj.pk}
-        form_input.update(request.POST.items())
+        form_input |= request.POST.items()
         form = type("BulkLoadMapForm", (BulkLoadMapBaseForm,), fields)(form_input)
-        # Did they submit mappings for all questions? If not, show form
-        if form.is_valid():
-            # Save and import!
-            errors = []
-            successful = 0
-            target_map = dict(
-                (name, int(value))
-                for name, value in form.cleaned_data.items()
-                if name != "csv_id" and value
-            )
-            for i, row in enumerate(rows[1:]):
-                try:
-                    with atomic():
-                        self.process_row(row, target_map)
-                        successful += 1
-                except Exception as e:
-                    errors.append((i, row, e))
-            csv_obj.delete()
-            return self.render_to_response(
-                {
-                    "successful": successful,
-                    "errors": errors,
-                }
-            )
-        else:
+        if not form.is_valid():
             # Show mapping form
             return self.render_to_response(
                 {
                     "form": form,
                 }
             )
+        # Save and import!
+        errors = []
+        successful = 0
+        target_map = {
+            name: int(value)
+            for name, value in form.cleaned_data.items()
+            if name != "csv_id" and value
+        }
+
+        for i, row in enumerate(rows[1:]):
+            try:
+                with atomic():
+                    self.process_row(row, target_map)
+                    successful += 1
+            except Exception as e:
+                errors.append((i, row, e))
+        csv_obj.delete()
+        return self.render_to_response(
+            {
+                "successful": successful,
+                "errors": errors,
+            }
+        )
 
 
 class BulkLoadApplicants(BulkLoader, TemplateView):
@@ -96,14 +95,11 @@ class BulkLoadApplicants(BulkLoader, TemplateView):
             ("email", True, "Email"),
             ("timestamp", False, "Timestamp"),
         ]
-        for question in self.program.questions.all():
-            targets.append(
-                (
-                    "q%s" % question.id,
-                    True,
-                    question.question,
-                )
-            )
+        targets.extend(
+            (f"q{question.id}", True, question.question)
+            for question in self.program.questions.all()
+        )
+
         return targets
 
     def process_row(self, row, target_map):
@@ -142,11 +138,12 @@ class BulkLoadApplicants(BulkLoader, TemplateView):
                 question = self.program.questions.get(pk=key.lstrip("q"))
                 if question.type == "boolean":
                     answer = str(
-                        not any(
-                            (raw_answer.lower().strip() == no_word)
+                        all(
+                            raw_answer.lower().strip() != no_word
                             for no_word in ("no", "false", "off", "", "0")
                         )
                     )
+
                 elif question.type == "integer":
                     if not raw_answer.strip():
                         answer = None
@@ -155,9 +152,9 @@ class BulkLoadApplicants(BulkLoader, TemplateView):
                             answer = str(int(raw_answer.strip()))
                         except ValueError:
                             raise ValueError(
-                                "Invalid integer value for question %s: %s"
-                                % (question.question, raw_answer)
+                                f"Invalid integer value for question {question.question}: {raw_answer}"
                             )
+
                 else:
                     answer = raw_answer
                 answer_obj = Answer.objects.filter(
@@ -199,7 +196,7 @@ class BulkLoadScores(BulkLoader, TemplateView):
             if not score_value.strip():
                 raise ValueError("Score is blank")
             else:
-                raise ValueError("Score is invalid: %s" % score_value)
+                raise ValueError(f"Score is invalid: {score_value}")
         if "comment" in target_map:
             score.comment = row[target_map["comment"]]
         score.save()
