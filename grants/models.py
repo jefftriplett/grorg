@@ -130,10 +130,7 @@ class Applicant(models.Model):
 
     def average_score(self):
         scores = [s.score for s in self.scores.all() if s.score]
-        if not scores:
-            return None
-        else:
-            return sum(scores) / float(len(scores))
+        return sum(scores) / float(len(scores)) if scores else None
 
     def variance(self):
         data = [s.score for s in self.scores.all() if s.score]
@@ -145,7 +142,7 @@ class Applicant(models.Model):
             return 0
         ss = sum((x-c)**2 for x in data)
         ss -= sum((x-c) for x in data)**2/len(data)
-        assert not ss < 0, 'negative sum of square deviations: %f' % ss
+        assert ss >= 0, 'negative sum of square deviations: %f' % ss
         return ss / (n-1)
 
     def stdev(self):

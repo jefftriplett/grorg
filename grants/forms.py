@@ -48,11 +48,7 @@ class BulkLoadMapBaseForm(forms.Form):
                     continue
                 if name != name2 and value and value == value2:
                     raise forms.ValidationError(
-                        "You cannot choose the same source (%s) for more than one question (%s and %s)." % (
-                            value,
-                            name,
-                            name2,
-                        )
+                        f"You cannot choose the same source ({value}) for more than one question ({name} and {name2})."
                     )
 
 

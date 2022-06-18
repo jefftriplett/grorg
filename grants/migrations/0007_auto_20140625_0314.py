@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 
 
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -14,17 +16,33 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Allocation',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                (
+                    'id',
+                    models.AutoField(
+                        verbose_name='ID',
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
                 ('amount', models.PositiveIntegerField()),
-                ('applicant', models.ForeignKey(to='grants.Applicant', on_delete=models.CASCADE)),
-                ('resource', models.ForeignKey(to='grants.Resource', on_delete=models.CASCADE)),
+                (
+                    'applicant',
+                    models.ForeignKey(
+                        to='grants.Applicant', on_delete=models.CASCADE
+                    ),
+                ),
+                (
+                    'resource',
+                    models.ForeignKey(
+                        to='grants.Resource', on_delete=models.CASCADE
+                    ),
+                ),
             ],
-            options={
-            },
+            options={},
             bases=(models.Model,),
         ),
         migrations.AlterUniqueTogether(
-            name='allocation',
-            unique_together=set([(b'applicant', b'resource')]),
+            name='allocation', unique_together={(b'applicant', b'resource')}
         ),
     ]

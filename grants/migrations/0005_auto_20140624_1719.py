@@ -5,6 +5,8 @@ from django.db import models, migrations
 from django.conf import settings
 
 
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -16,23 +18,38 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Score',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                (
+                    'id',
+                    models.AutoField(
+                        verbose_name='ID',
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
                 ('score', models.FloatField(null=True, blank=True)),
                 ('comment', models.TextField(null=True, blank=True)),
                 ('score_history', models.TextField(null=True, blank=True)),
-                ('applicant', models.ForeignKey(to='grants.Applicant', on_delete=models.CASCADE)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                (
+                    'applicant',
+                    models.ForeignKey(
+                        to='grants.Applicant', on_delete=models.CASCADE
+                    ),
+                ),
+                (
+                    'user',
+                    models.ForeignKey(
+                        to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+                    ),
+                ),
             ],
-            options={
-            },
+            options={},
             bases=(models.Model,),
         ),
         migrations.AlterUniqueTogether(
-            name='score',
-            unique_together=set([(b'applicant', b'user')]),
+            name='score', unique_together={(b'applicant', b'user')}
         ),
         migrations.AlterUniqueTogether(
-            name='answer',
-            unique_together=set([(b'applicant', b'question')]),
+            name='answer', unique_together={(b'applicant', b'question')}
         ),
     ]
